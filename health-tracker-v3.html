@@ -477,8 +477,7 @@
             borderColor: 'rgba(44, 62, 80, 1)'
         };
         
-        // Αρχικοποίηση μεταβλητών - τώρα χρησιμοποιούμε έναν παγκόσμιο πίνακα στη μνήμη
-        // αντί για storage API
+        // Αρχικοποίηση μεταβλητών με χρήση localStorage
         window.healthAppData = {
             records: [],
             lastExportPrompt: null
@@ -510,6 +509,27 @@
             
             const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
             document.getElementById('measurementDateTime').value = formattedDateTime;
+        }
+        
+        // Αποθήκευση δεδομένων στο localStorage
+        function saveDataToLocalStorage() {
+            localStorage.setItem('healthAppData', JSON.stringify(window.healthAppData));
+        }
+        
+        // Φόρτωση δεδομένων από το localStorage
+        function loadDataFromLocalStorage() {
+            const savedData = localStorage.getItem('healthAppData');
+            if (savedData) {
+                window.healthAppData = JSON.parse(savedData);
+                
+                // Ελέγχουμε αν τα δεδομένα έχουν φορτωθεί σωστά
+                if (!window.healthAppData.records || !Array.isArray(window.healthAppData.records)) {
+                    window.healthAppData.records = [];
+                }
+            } else {
+                // Αν δεν υπάρχουν αποθηκευμένα δεδομένα, δημιουργούμε δεδομένα επίδειξης
+                createSampleData();
+            }
         }
         
         // Δημιουργία δεδομένων επίδειξης
@@ -562,21 +582,26 @@
             // Προσθήκη στα δεδομένα της εφαρμογής
             window.healthAppData.records = sampleRecords;
             
-            // Ενημέρωση της προβολής
-            renderRecords();
-            updateStats();
-            updateCharts();
+            // Αποθήκευση των δεδομένων επίδειξης στο localStorage
+            saveDataToLocalStorage();
         }
         
         window.onload = function() {
+            // Φόρτωση δεδομένων από το localStorage
+            loadDataFromLocalStorage();
+            
             // Ορισμός τρέχουσας ημερομηνίας/ώρας
             setCurrentDateTime();
             
             // Αρχικοποίηση γραφημάτων
             initCharts();
             
-            // Φόρτωση δεδομένων επίδειξης
-            createSampleData();
+            // Προβολή των εγγραφών
+            renderRecords();
+            
+            // Ενημέρωση στατιστικών και γραφημάτων
+            updateStats();
+            updateCharts();
             
             // Έλεγχος για το τέλος του μήνα
             checkEndOfMonth();
@@ -646,6 +671,10 @@
             };
             
             window.healthAppData.records.push(record);
+            
+            // Αποθήκευση στο localStorage μετά από κάθε νέα καταχώρηση
+            saveDataToLocalStorage();
+            
             renderRecords();
             updateStats();
             updateCharts();
@@ -796,6 +825,10 @@
         
         function deleteRecord(id) {
             window.healthAppData.records = window.healthAppData.records.filter(record => record.id !== id);
+            
+            // Αποθήκευση στο localStorage μετά από διαγραφή
+            saveDataToLocalStorage();
+            
             renderRecords();
             updateStats();
             updateCharts();
@@ -805,6 +838,10 @@
         function clearRecords() {
             if (confirm('Είστε σίγουροι ότι θέλετε να διαγράψετε όλες τις καταγραφές;')) {
                 window.healthAppData.records = [];
+                
+                // Αποθήκευση της κενής λίστας στο localStorage
+                saveDataToLocalStorage();
+                
                 renderRecords();
                 updateStats();
                 updateCharts();
@@ -1290,6 +1327,8 @@
                             }
                         }
                         window.healthAppData.lastExportPrompt = lastPromptDate;
+                        // Αποθήκευση της μεταβλητής στο localStorage
+                        saveDataToLocalStorage();
                     }, 2000);
                 }
             }
