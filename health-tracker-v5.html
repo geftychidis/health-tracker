@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Εφαρμογή Παρακολούθησης Πίεσης και Ζωτικών Σημείων</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        
+        h1, h2, h3 {
+            color: var(--dark-color);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light-color);
+        }
+        
+        .form-container {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        input[type="number"],
+        input[type="datetime-local"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-success {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .btn-warning:hover {
+            background-color: #d35400;
+        }
+        
+        .table-container {
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: var(--dark-color);
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .row-danger {
+            background-color: rgba(231, 76, 60, 0.2) !important;
+            color: #c0392b;
+            font-weight: 600;
+        }
+        
+        .charts-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .chart-box {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            color: #333;
+            cursor: pointer;
+            font-size: 16px;
+            position: relative;
+        }
+        
+        .tab-btn.active {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary-color);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .stats-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            flex: 1;
+            min-width: 200px;
+            background-color: white;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            margin-top: 0;
+            color: var(--dark-color);
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        
+        .normal {
+            color: var(--secondary-color);
+        }
+        
+        .warning {
+            color: var(--warning-color);
+        }
+        
+        .danger {
+            color: var(--danger-color);
+        }
+        
+        .value-indicator {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+        
+        .alert-banner {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .close-alert {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #721c24;
+        }
+        
+        .alerts-container {
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                flex-direction: column;
+            }
+            
+            .chart-box {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Εφαρμογή Παρακολούθησης Πίεσης και Ζωτικών Σημείων</h1>
+        </div>
+        
+        <div id="alertsContainer" class="alerts-container">
+            <!-- Εδώ θα εμφανίζονται οι συναγερμοί -->
+        </div>
+        
+        <div class="form-container">
+            <h2>Καταχώρηση Νέας Μέτρησης</h2>
+            <form id="healthForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="systolic">Συστολική Πίεση (mm Hg)</label>
+                        <input type="number" id="systolic" name="systolic" required min="70" max="220" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="diastolic">Διαστολική Πίεση (mm Hg)</label>
+                        <input type="number" id="diastolic" name="diastolic" required min="40" max="120" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="heartRate">Παλμοί (BPM)</label>
+                        <input type="number" id="heartRate" name="heartRate" required min="40" max="200" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="oxygenSaturation">Οξυγόνο Αίματος (%)</label>
+                        <input type="number" id="oxygenSaturation" name="oxygenSaturation" required min="70" max="100" step="1">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="measurementDateTime">Ημερομηνία και Ώρα Μέτρησης</label>
+                        <input type="datetime-local" id="measurementDateTime" name="measurementDateTime" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-success">Καταχώρηση</button>
+            </form>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="records">Καταγραφές</button>
+            <button class="tab-btn" data-tab="stats">Στατιστικά</button>
+            <button class="tab-btn" data-tab="charts">Γραφήματα</button>
+        </div>
+        
+        <div id="records" class="tab-content active">
+            <div class="table-actions">
+                <button id="exportBtn" class="btn-warning">Εξαγωγή σε Excel</button>
+                <button id="clearBtn" class="btn-danger">Καθαρισμός Όλων</button>
+            </div>
+            <div class="table-container">
+                <table id="recordsTable">
+                    <thead>
+                        <tr>
+                            <th>Ημερομηνία & Ώρα</th>
+                            <th>Συστολική</th>
+                            <th>Διαστολική</th>
+                            <th>Παλμοί</th>
+                            <th>Οξυγόνο</th>
+                            <th>Κατάσταση</th>
+                            <th>Ενέργειες</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsList">
+                        <!-- Εδώ θα εμφανίζονται οι καταγραφές -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="stats" class="tab-content">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="timeRangeSelect">Χρονική Περίοδος</label>
+                    <select id="timeRangeSelect" class="form-control">
+                        <option value="day">Σήμερα</option>
+                        <option value="week">Εβδομάδα</option>
+                        <option value="month">Μήνας</option>
+                        <option value="all">Όλες οι μετρήσεις</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="stats-box">
+                <div class="stat-card">
+                    <h3>Συστολική</h3>
+                    <div id="systolicAvg" class="stat-value">-</div>
+                    <div>Μέση τιμή</div>
+                    <div id="systolicRange">Εύρος: -</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Διαστολική</h3>
+                    <div id="diastolicAvg" class="stat-value">-</div>
+                    <div>Μέση τιμή</div>
+                    <div id="diastolicRange">Εύρος: -</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Παλμοί</h3>
+                    <div id="heartRateAvg" class="stat-value">-</div>
+                    <div>Μέση τιμή</div>
+                    <div id="heartRateRange">Εύρος: -</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Οξυγόνο</h3>
+                    <div id="oxygenAvg" class="stat-value">-</div>
+                    <div>Μέση τιμή</div>
+                    <div id="oxygenRange">Εύρος: -</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Συνολικά Στατιστικά</h3>
+                <div id="abnormalCount" class="stat-value danger">-</div>
+                <div>Μετρήσεις εκτός φυσιολογικών ορίων</div>
+            </div>
+        </div>
+        
+        <div id="charts" class="tab-content">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="chartTimeRange">Χρονική Περίοδος</label>
+                    <select id="chartTimeRange" class="form-control">
+                        <option value="day">Σήμερα</option>
+                        <option value="week">Εβδομάδα</option>
+                        <option value="month">Μήνας</option>
+                        <option value="all">Όλες οι μετρήσεις</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="chartType">Τύπος Γραφήματος</label>
+                    <select id="chartType" class="form-control">
+                        <option value="line">Γραμμικό</option>
+                        <option value="bar">Ραβδόγραμμα</option>
+                        <option value="radar">Ραντάρ</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="charts-container">
+                <div class="chart-box">
+                    <h3>Αρτηριακή Πίεση</h3>
+                    <canvas id="bloodPressureChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3>Παλμοί</h3>
+                    <canvas id="heartRateChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3>Οξυγόνο Αίματος</h3>
+                    <canvas id="oxygenChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h3>Συνδυαστικό Γράφημα</h3>
+                    <canvas id="combinedChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Ορισμός ορίων
+        const LIMITS = {
+            systolic: { min: 90, max: 135, ideal: 120 },
+            diastolic: { min: 60, max: 80, ideal: 70 },
+            heartRate: { min: 60, max: 90, ideal: 75 },
+            oxygenSaturation: { min: 93, max: 100, ideal: 98 }
+        };
+        
+        // Ορισμός χρωμάτων για τα γραφήματα
+        const CHART_COLORS = {
+            systolic: 'rgba(231, 76, 60, 0.7)',
+            diastolic: 'rgba(52, 152, 219, 0.7)',
+            heartRate: 'rgba(46, 204, 113, 0.7)',
+            oxygenSaturation: 'rgba(155, 89, 182, 0.7)',
+            borderColor: 'rgba(44, 62, 80, 1)'
+        };
+        
+        // Αρχικοποίηση μεταβλητών με χρήση localStorage
+        window.healthAppData = {
+            records: [],
+            lastExportPrompt: null
+        };
+        
+        // DOM Elements
+        const healthForm = document.getElementById('healthForm');
+        const recordsList = document.getElementById('recordsList');
+        const exportBtn = document.getElementById('exportBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const timeRangeSelect = document.getElementById('timeRangeSelect');
+        const chartTimeRange = document.getElementById('chartTimeRange');
+        const chartType = document.getElementById('chartType');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const alertsContainer = document.getElementById('alertsContainer');
+        
+        // Καθολικό αντικείμενο charts
+        let charts = {};
+        
+        // Ορισμός της τρέχουσας ημερομηνίας και ώρας ως προεπιλογή
+        function setCurrentDateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            document.getElementById('measurementDateTime').value = formattedDateTime;
+        }
+        
+        // Αποθήκευση δεδομένων στο localStorage
+        function saveDataToLocalStorage() {
+            localStorage.setItem('healthAppData', JSON.stringify(window.healthAppData));
+        }
+        
+        // Φόρτωση δεδομένων από το localStorage
+        function loadDataFromLocalStorage() {
+            const savedData = localStorage.getItem('healthAppData');
+            if (savedData) {
+                window.healthAppData = JSON.parse(savedData);
+                
+                // Ελέγχουμε αν τα δεδομένα έχουν φορτωθεί σωστά
+                if (!window.healthAppData.records || !Array.isArray(window.healthAppData.records)) {
+                    window.healthAppData.records = [];
+                }
+            } else {
+                // Αν δεν υπάρχουν αποθηκευμένα δεδομένα, δημιουργούμε δεδομένα επίδειξης
+                createSampleData();
+            }
+        }
+        
+        // Δημιουργία δεδομένων επίδειξης
+        function createSampleData() {
+            const now = new Date();
+            
+            // Δημιουργία μερικών εγγραφών για επίδειξη
+            const sampleRecords = [
+                {
+                    id: Date.now() - 86400000 * 3,
+                    date: new Date(now.getTime() - 86400000 * 3).toISOString(), // 3 μέρες πριν
+                    systolic: 125,
+                    diastolic: 75,
+                    heartRate: 72,
+                    oxygenSaturation: 97,
+                    abnormal: false,
+                    systolicQuality: getValueQuality('systolic', 125),
+                    diastolicQuality: getValueQuality('diastolic', 75),
+                    heartRateQuality: getValueQuality('heartRate', 72),
+                    oxygenQuality: getValueQuality('oxygenSaturation', 97)
+                },
+                {
+                    id: Date.now() - 86400000 * 2,
+                    date: new Date(now.getTime() - 86400000 * 2).toISOString(), // 2 μέρες πριν
+                    systolic: 130,
+                    diastolic: 80,
+                    heartRate: 78,
+                    oxygenSaturation: 96,
+                    abnormal: false,
+                    systolicQuality: getValueQuality('systolic', 130),
+                    diastolicQuality: getValueQuality('diastolic', 80),
+                    heartRateQuality: getValueQuality('heartRate', 78),
+                    oxygenQuality: getValueQuality('oxygenSaturation', 96)
+                },
+                {
+                    id: Date.now() - 86400000,
+                    date: new Date(now.getTime() - 86400000).toISOString(), // 1 μέρα πριν
+                    systolic: 118,
+                    diastolic: 72,
+                    heartRate: 70,
+                    oxygenSaturation: 98,
+                    abnormal: false,
+                    systolicQuality: getValueQuality('systolic', 118),
+                    diastolicQuality: getValueQuality('diastolic', 72),
+                    heartRateQuality: getValueQuality('heartRate', 70),
+                    oxygenQuality: getValueQuality('oxygenSaturation', 98)
+                }
+            ];
+            
+            // Προσθήκη στα δεδομένα της εφαρμογής
+            window.healthAppData.records = sampleRecords;
+            
+            // Αποθήκευση των δεδομένων επίδειξης στο localStorage
+            saveDataToLocalStorage();
+        }
+        
+        window.onload = function() {
+            // Φόρτωση δεδομένων από το localStorage
+            loadDataFromLocalStorage();
+            
+            // Ορισμός τρέχουσας ημερομηνίας/ώρας
+            setCurrentDateTime();
+            
+            // Αρχικοποίηση γραφημάτων
+            initCharts();
+            
+            // Προβολή των εγγραφών
+            renderRecords();
+            
+            // Ενημέρωση στατιστικών και γραφημάτων
+            updateStats();
+            updateCharts();
+            
+            // Έλεγχος για το τέλος του μήνα
+            checkEndOfMonth();
+            
+            // Έλεγχος για συναγερμούς
+            checkAlerts();
+        };
+        
+        // Event Listeners
+        healthForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addRecord();
+        });
+        
+        exportBtn.addEventListener('click', exportToExcel);
+        clearBtn.addEventListener('click', clearRecords);
+        
+        timeRangeSelect.addEventListener('change', updateStats);
+        
+        chartTimeRange.addEventListener('change', function() {
+            updateCharts();
+        });
+        
+        chartType.addEventListener('change', function() {
+            updateChartType();
+        });
+        
+        // Tab functionality
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                this.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+                
+                if (tabId === 'charts') {
+                    updateCharts();
+                } else if (tabId === 'stats') {
+                    updateStats();
+                }
+            });
+        });
+        
+        // Λειτουργίες
+        function addRecord() {
+            const systolic = parseInt(document.getElementById('systolic').value);
+            const diastolic = parseInt(document.getElementById('diastolic').value);
+            const heartRate = parseInt(document.getElementById('heartRate').value);
+            const oxygenSaturation = parseInt(document.getElementById('oxygenSaturation').value);
+            const measurementDateTime = document.getElementById('measurementDateTime').value;
+            
+            const record = {
+                id: Date.now(),
+                date: measurementDateTime,
+                systolic,
+                diastolic,
+                heartRate,
+                oxygenSaturation,
+                abnormal: isAbnormal(systolic, diastolic, heartRate, oxygenSaturation),
+                systolicQuality: getValueQuality('systolic', systolic),
+                diastolicQuality: getValueQuality('diastolic', diastolic),
+                heartRateQuality: getValueQuality('heartRate', heartRate),
+                oxygenQuality: getValueQuality('oxygenSaturation', oxygenSaturation)
+            };
+            
+            window.healthAppData.records.push(record);
+            
+            // Αποθήκευση στο localStorage μετά από κάθε νέα καταχώρηση
+            saveDataToLocalStorage();
+            
+            renderRecords();
+            updateStats();
+            updateCharts();
+            checkAlerts();
+            
+            // Καθαρισμός φόρμας
+            healthForm.reset();
+            
+            // Επαναφορά της τρέχουσας ημερομηνίας και ώρας
+            setCurrentDateTime();
+        }
+        
+        function isAbnormal(systolic, diastolic, heartRate, oxygenSaturation) {
+            return (
+                systolic > LIMITS.systolic.max || 
+                systolic < LIMITS.systolic.min || 
+                diastolic > LIMITS.diastolic.max || 
+                diastolic < LIMITS.diastolic.min || 
+                heartRate > LIMITS.heartRate.max || 
+                heartRate < LIMITS.heartRate.min || 
+                oxygenSaturation < LIMITS.oxygenSaturation.min
+            );
+        }
+        
+        function getValueQuality(type, value) {
+            // Επιστρέφει τιμή από 0 (χειρότερη) έως 10 (καλύτερη) με βάση την απόκλιση από την ιδανική τιμή
+            const ideal = LIMITS[type].ideal;
+            const min = LIMITS[type].min;
+            const max = LIMITS[type].max;
+            
+            if (type === 'oxygenSaturation') {
+                // Για το οξυγόνο, όσο πιο κοντά στο 100%, τόσο καλύτερα
+                if (value < min) {
+                    return 0; // Κάτω από το ελάχιστο όριο
+                }
+                // Γραμμική κλιμάκωση από το ελάχιστο έως το μέγιστο
+                return Math.round(((value - min) / (max - min)) * 10);
+            } else {
+                // Για τις άλλες μετρήσεις, όσο πιο κοντά στην ιδανική τιμή, τόσο καλύτερα
+                if (value < min || value > max) {
+                    return 0; // Εκτός ορίων
+                }
+                
+                // Απόσταση από την ιδανική τιμή (κανονικοποιημένη)
+                const distance = Math.abs(value - ideal) / (ideal - min > max - ideal ? ideal - min : max - ideal);
+                return Math.round((1 - distance) * 10);
+            }
+        }
+        
+        function getQualityColor(quality) {
+            // Επιστρέφει ένα χρώμα σε παλέτα από πράσινο έως κόκκινο με βάση την ποιότητα (0-10)
+            const colors = [
+                '#e74c3c', // 0 - Κόκκινο (χειρότερο)
+                '#e67e22',
+                '#f39c12',
+                '#f1c40f',
+                '#f39c12',
+                '#e67e22',
+                '#3498db',
+                '#2ecc71',
+                '#27ae60',
+                '#27ae60',
+                '#2ecc71'  // 10 - Πράσινο (καλύτερο)
+            ];
+            
+            return colors[quality];
+        }
+        
+        function getAbnormalReason(record) {
+            const reasons = [];
+            
+            if (record.systolic > LIMITS.systolic.max) {
+                reasons.push('Υψηλή συστολική');
+            } else if (record.systolic < LIMITS.systolic.min) {
+                reasons.push('Χαμηλή συστολική');
+            }
+            
+            if (record.diastolic > LIMITS.diastolic.max) {
+                reasons.push('Υψηλή διαστολική');
+            } else if (record.diastolic < LIMITS.diastolic.min) {
+                reasons.push('Χαμηλή διαστολική');
+            }
+            
+            if (record.heartRate > LIMITS.heartRate.max) {
+                reasons.push('Υψηλοί παλμοί');
+            } else if (record.heartRate < LIMITS.heartRate.min) {
+                reasons.push('Χαμηλοί παλμοί');
+            }
+            
+            if (record.oxygenSaturation < LIMITS.oxygenSaturation.min) {
+                reasons.push('Χαμηλό οξυγόνο');
+            }
+            
+            return reasons.join(', ');
+        }
+        
+        function renderRecords() {
+            recordsList.innerHTML = '';
+            
+            // Ταξινόμηση των εγγραφών με βάση την ημερομηνία (από την πιο πρόσφατη στην παλαιότερη)
+            const sortedRecords = [...window.healthAppData.records].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sortedRecords.forEach(record => {
+                const tr = document.createElement('tr');
+                if (record.abnormal) {
+                    tr.classList.add('row-danger');
+                }
+                
+                const formattedDate = new Date(record.date).toLocaleString('el-GR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const status = record.abnormal ? 
+                    `<span class="danger">${getAbnormalReason(record)}</span>` : 
+                    '<span class="normal">Φυσιολογική</span>';
+                
+                tr.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>
+                        <span class="value-indicator" style="background-color: ${getQualityColor(record.systolicQuality)}"></span>
+                        ${record.systolic}
+                    </td>
+                    <td>
+                        <span class="value-indicator" style="background-color: ${getQualityColor(record.diastolicQuality)}"></span>
+                        ${record.diastolic}
+                    </td>
+                    <td>
+                        <span class="value-indicator" style="background-color: ${getQualityColor(record.heartRateQuality)}"></span>
+                        ${record.heartRate}
+                    </td>
+                    <td>
+                        <span class="value-indicator" style="background-color: ${getQualityColor(record.oxygenQuality)}"></span>
+                        ${record.oxygenSaturation}%
+                    </td>
+                    <td>${status}</td>
+                    <td>
+                        <button class="btn-danger" onclick="deleteRecord(${record.id})">Διαγραφή</button>
+                    </td>
+                `;
+                
+                recordsList.appendChild(tr);
+            });
+        }
+        
+        function deleteRecord(id) {
+            window.healthAppData.records = window.healthAppData.records.filter(record => record.id !== id);
+            
+            // Αποθήκευση στο localStorage μετά από διαγραφή
+            saveDataToLocalStorage();
+            
+            renderRecords();
+            updateStats();
+            updateCharts();
+            checkAlerts();
+        }
+        
+        function clearRecords() {
+            if (confirm('Είστε σίγουροι ότι θέλετε να διαγράψετε όλες τις καταγραφές;')) {
+                window.healthAppData.records = [];
+                
+                // Αποθήκευση της κενής λίστας στο localStorage
+                saveDataToLocalStorage();
+                
+                renderRecords();
+                updateStats();
+                updateCharts();
+                checkAlerts();
+            }
+        }
+        
+        function exportToExcel() {
+            if (window.healthAppData.records.length === 0) {
+                alert('Δεν υπάρχουν εγγραφές για εξαγωγή.');
+                return;
+            }
+            
+            // Δημιουργία δεδομένων για το Excel
+            const data = window.healthAppData.records.map(record => {
+                const formattedDate = new Date(record.date).toLocaleString('el-GR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                return {
+                    'Ημερομηνία & Ώρα': formattedDate,
+                    'Συστολική': record.systolic,
+                    'Διαστολική': record.diastolic,
+                    'Παλμοί': record.heartRate,
+                    'Οξυγόνο (%)': record.oxygenSaturation,
+                    'Εκτός ορίων': record.abnormal ? 'Ναι' : 'Όχι'
+                };
+            });
+            
+            // Δημιουργία του Excel
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Μετρήσεις');
+            
+            // Ορισμός ονόματος αρχείου με την τρέχουσα ημερομηνία
+            const now = new Date();
+            const monthYear = now.toLocaleString('el-GR', { month: 'long', year: 'numeric' });
+            const fileName = `Μετρήσεις_${monthYear}.xlsx`;
+            
+            // Αποθήκευση του αρχείου
+            XLSX.writeFile(wb, fileName);
+        }
+        
+        function getFilteredRecords(timeRange) {
+            const selectedRange = timeRange || timeRangeSelect.value;
+            const now = new Date();
+            
+            if (selectedRange === 'all') {
+                return window.healthAppData.records;
+            }
+            
+            let startDate;
+            
+            if (selectedRange === 'day') {
+                startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            } else if (selectedRange === 'week') {
+                const dayOfWeek = now.getDay();
+                const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust for Sunday
+                startDate = new Date(now.getFullYear(), now.getMonth(), diff);
+            } else if (selectedRange === 'month') {
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+            }
+            
+            return window.healthAppData.records.filter(record => new Date(record.date) >= startDate);
+        }
+        
+        function updateStats() {
+            const filteredRecords = getFilteredRecords();
+            
+            if (filteredRecords.length === 0) {
+                document.getElementById('systolicAvg').textContent = '-';
+                document.getElementById('diastolicAvg').textContent = '-';
+                document.getElementById('heartRateAvg').textContent = '-';
+                document.getElementById('oxygenAvg').textContent = '-';
+                document.getElementById('systolicRange').textContent = 'Εύρος: -';
+                document.getElementById('diastolicRange').textContent = 'Εύρος: -';
+                document.getElementById('heartRateRange').textContent = 'Εύρος: -';
+                document.getElementById('oxygenRange').textContent = 'Εύρος: -';
+                document.getElementById('abnormalCount').textContent = '-';
+                return;
+            }
+            
+            // Υπολογισμός μέσων τιμών
+            const systolicValues = filteredRecords.map(r => r.systolic);
+            const diastolicValues = filteredRecords.map(r => r.diastolic);
+            const heartRateValues = filteredRecords.map(r => r.heartRate);
+            const oxygenValues = filteredRecords.map(r => r.oxygenSaturation);
+            
+            const systolicAvg = Math.round(systolicValues.reduce((sum, val) => sum + val, 0) / systolicValues.length);
+            const diastolicAvg = Math.round(diastolicValues.reduce((sum, val) => sum + val, 0) / diastolicValues.length);
+            const heartRateAvg = Math.round(heartRateValues.reduce((sum, val) => sum + val, 0) / heartRateValues.length);
+            const oxygenAvg = Math.round(oxygenValues.reduce((sum, val) => sum + val, 0) / oxygenValues.length);
+            
+            // Υπολογισμός εύρους (min-max)
+            const systolicMin = Math.min(...systolicValues);
+            const systolicMax = Math.max(...systolicValues);
+            const diastolicMin = Math.min(...diastolicValues);
+            const diastolicMax = Math.max(...diastolicValues);
+            const heartRateMin = Math.min(...heartRateValues);
+            const heartRateMax = Math.max(...heartRateValues);
+            const oxygenMin = Math.min(...oxygenValues);
+            const oxygenMax = Math.max(...oxygenValues);
+            
+            // Υπολογισμός αριθμού μη φυσιολογικών μετρήσεων
+            const abnormalCount = filteredRecords.filter(r => r.abnormal).length;
+            
+            // Ενημέρωση του DOM
+            const systolicAvgEl = document.getElementById('systolicAvg');
+            const diastolicAvgEl = document.getElementById('diastolicAvg');
+            const heartRateAvgEl = document.getElementById('heartRateAvg');
+            const oxygenAvgEl = document.getElementById('oxygenAvg');
+            
+            systolicAvgEl.textContent = systolicAvg;
+            diastolicAvgEl.textContent = diastolicAvg;
+            heartRateAvgEl.textContent = heartRateAvg;
+            oxygenAvgEl.textContent = oxygenAvg;
+            
+            // Προσθήκη χρωμάτων με βάση τα όρια
+            systolicAvgEl.className = 'stat-value ' + getValueClass('systolic', systolicAvg);
+            diastolicAvgEl.className = 'stat-value ' + getValueClass('diastolic', diastolicAvg);
+            heartRateAvgEl.className = 'stat-value ' + getValueClass('heartRate', heartRateAvg);
+            oxygenAvgEl.className = 'stat-value ' + getValueClass('oxygenSaturation', oxygenAvg);
+            
+            document.getElementById('systolicRange').textContent = `Εύρος: ${systolicMin}-${systolicMax}`;
+            document.getElementById('diastolicRange').textContent = `Εύρος: ${diastolicMin}-${diastolicMax}`;
+            document.getElementById('heartRateRange').textContent = `Εύρος: ${heartRateMin}-${heartRateMax}`;
+            document.getElementById('oxygenRange').textContent = `Εύρος: ${oxygenMin}-${oxygenMax}`;
+            
+            document.getElementById('abnormalCount').textContent = `${abnormalCount} / ${filteredRecords.length}`;
+        }
+        
+        function getValueClass(type, value) {
+            if (type === 'oxygenSaturation') {
+                if (value < LIMITS[type].min) return 'danger';
+                return 'normal';
+            } else {
+                if (value > LIMITS[type].max) return 'danger';
+                if (value < LIMITS[type].min) return 'danger';
+                return 'normal';
+            }
+        }
+        
+        function initCharts() {
+            const ctx1 = document.getElementById('bloodPressureChart').getContext('2d');
+            const ctx2 = document.getElementById('heartRateChart').getContext('2d');
+            const ctx3 = document.getElementById('oxygenChart').getContext('2d');
+            const ctx4 = document.getElementById('combinedChart').getContext('2d');
+            
+            // Δημιουργία γραφημάτων
+            charts.bloodPressure = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Συστολική',
+                            data: [],
+                            backgroundColor: CHART_COLORS.systolic,
+                            borderColor: CHART_COLORS.systolic,
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Διαστολική',
+                            data: [],
+                            backgroundColor: CHART_COLORS.diastolic,
+                            borderColor: CHART_COLORS.diastolic,
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Αρτηριακή Πίεση'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 40,
+                            max: 200,
+                            title: {
+                                display: true,
+                                text: 'mmHg'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            charts.heartRate = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Παλμοί',
+                            data: [],
+                            backgroundColor: CHART_COLORS.heartRate,
+                            borderColor: CHART_COLORS.heartRate,
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Καρδιακοί Παλμοί'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 40,
+                            max: 150,
+                            title: {
+                                display: true,
+                                text: 'BPM'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            charts.oxygen = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Οξυγόνο',
+                            data: [],
+                            backgroundColor: CHART_COLORS.oxygenSaturation,
+                            borderColor: CHART_COLORS.oxygenSaturation,
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Οξυγόνο Αίματος'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 80,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: '%'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            charts.combined = new Chart(ctx4, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Συστολική / 10',
+                            data: [],
+                            backgroundColor: CHART_COLORS.systolic,
+                            borderColor: CHART_COLORS.systolic,
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Διαστολική / 10',
+                            data: [],
+                            backgroundColor: CHART_COLORS.diastolic,
+                            borderColor: CHART_COLORS.diastolic,
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Παλμοί / 10',
+                            data: [],
+                            backgroundColor: CHART_COLORS.heartRate,
+                            borderColor: CHART_COLORS.heartRate,
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Οξυγόνο %',
+                            data: [],
+                            backgroundColor: CHART_COLORS.oxygenSaturation,
+                            borderColor: CHART_COLORS.oxygenSaturation,
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.1,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Συνδυασμένο Γράφημα'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Πίεση/10, Παλμοί/10'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Οξυγόνο %'
+                            },
+                            min: 80,
+                            max: 100,
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateCharts() {
+            const filteredRecords = getFilteredRecords(chartTimeRange.value);
+            
+            if (filteredRecords.length === 0) {
+                clearCharts();
+                return;
+            }
+            
+            // Ταξινόμηση των εγγραφών με βάση την ημερομηνία (από την παλαιότερη στην πιο πρόσφατη)
+            const sortedRecords = [...filteredRecords].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Προετοιμασία δεδομένων για τα γραφήματα
+            const labels = sortedRecords.map(record => {
+                const date = new Date(record.date);
+                return date.toLocaleString('el-GR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            });
+            
+            const systolicData = sortedRecords.map(record => record.systolic);
+            const diastolicData = sortedRecords.map(record => record.diastolic);
+            const heartRateData = sortedRecords.map(record => record.heartRate);
+            const oxygenData = sortedRecords.map(record => record.oxygenSaturation);
+            
+            // Ενημέρωση γραφημάτων
+            charts.bloodPressure.data.labels = labels;
+            charts.bloodPressure.data.datasets[0].data = systolicData;
+            charts.bloodPressure.data.datasets[1].data = diastolicData;
+            charts.bloodPressure.update();
+            
+            charts.heartRate.data.labels = labels;
+            charts.heartRate.data.datasets[0].data = heartRateData;
+            charts.heartRate.update();
+            
+            charts.oxygen.data.labels = labels;
+            charts.oxygen.data.datasets[0].data = oxygenData;
+            charts.oxygen.update();
+            
+            charts.combined.data.labels = labels;
+            charts.combined.data.datasets[0].data = systolicData.map(val => val / 10);
+            charts.combined.data.datasets[1].data = diastolicData.map(val => val / 10);
+            charts.combined.data.datasets[2].data = heartRateData.map(val => val / 10);
+            charts.combined.data.datasets[3].data = oxygenData;
+            charts.combined.update();
+        }
+        
+        function updateChartType() {
+            const selectedType = chartType.value;
+            
+            charts.bloodPressure.config.type = selectedType;
+            charts.heartRate.config.type = selectedType;
+            charts.oxygen.config.type = selectedType;
+            
+            // Για το συνδυαστικό γράφημα κρατάμε το line για καλύτερη αναπαράσταση
+            if (selectedType !== 'radar') {
+                charts.combined.config.type = selectedType;
+            } else {
+                charts.combined.config.type = 'line';
+            }
+            
+            charts.bloodPressure.update();
+            charts.heartRate.update();
+            charts.oxygen.update();
+            charts.combined.update();
+        }
+        
+        function clearCharts() {
+            charts.bloodPressure.data.labels = [];
+            charts.bloodPressure.data.datasets[0].data = [];
+            charts.bloodPressure.data.datasets[1].data = [];
+            charts.bloodPressure.update();
+            
+            charts.heartRate.data.labels = [];
+            charts.heartRate.data.datasets[0].data = [];
+            charts.heartRate.update();
+            
+            charts.oxygen.data.labels = [];
+            charts.oxygen.data.datasets[0].data = [];
+            charts.oxygen.update();
+            
+            charts.combined.data.labels = [];
+            charts.combined.data.datasets[0].data = [];
+            charts.combined.data.datasets[1].data = [];
+            charts.combined.data.datasets[2].data = [];
+            charts.combined.data.datasets[3].data = [];
+            charts.combined.update();
+        }
+        
+        function checkEndOfMonth() {
+            const now = new Date();
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            
+            // Αν είναι η τελευταία μέρα του μήνα
+            if (now.getDate() === lastDay) {
+                // Έλεγχος αν έχουμε ήδη εμφανίσει την ειδοποίηση σήμερα
+                const lastPromptDate = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+                
+                if (window.healthAppData.lastExportPrompt !== lastPromptDate && window.healthAppData.records.length > 0) {
+                    setTimeout(() => {
+                        if (confirm('Είναι η τελευταία μέρα του μήνα! Θέλετε να εξάγετε τις μετρήσεις σας σε αρχείο Excel;')) {
+                            exportToExcel();
+                            if (confirm('Θέλετε να καθαρίσετε τις μετρήσεις για τον επόμενο μήνα;')) {
+                                clearRecords();
+                            }
+                        }
+                        window.healthAppData.lastExportPrompt = lastPromptDate;
+                        // Αποθήκευση της μεταβλητής στο localStorage
+                        saveDataToLocalStorage();
+                    }, 2000);
+                }
+            }
+        }
+        
+        function checkAlerts() {
+            alertsContainer.innerHTML = '';
+            
+            if (window.healthAppData.records.length < 3) {
+                return; // Χρειάζονται τουλάχιστον 3 εγγραφές για να ελέγξουμε για συναγερμούς
+            }
+            
+            // Έλεγχος για συνεχόμενες μη φυσιολογικές τιμές στις τελευταίες 3 μετρήσεις
+            const recentRecords = [...window.healthAppData.records].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+            
+            // Έλεγχος συστολικής πίεσης
+            if (recentRecords.every(r => r.systolic > LIMITS.systolic.max)) {
+                addAlert('Προσοχή: Συνεχόμενες μετρήσεις υψηλής συστολικής πίεσης!');
+            } else if (recentRecords.every(r => r.systolic < LIMITS.systolic.min)) {
+                addAlert('Προσοχή: Συνεχόμενες μετρήσεις χαμηλής συστολικής πίεσης!');
+            }
+            
+            // Έλεγχος διαστολικής πίεσης
+            if (recentRecords.every(r => r.diastolic > LIMITS.diastolic.max)) {
+                addAlert('Προσοχή: Συνεχόμενες μετρήσεις υψηλής διαστολικής πίεσης!');
+            } else if (recentRecords.every(r => r.diastolic < LIMITS.diastolic.min)) {
+                addAlert('Προσοχή: Συνεχόμενες μετρήσεις χαμηλής διαστολικής πίεσης!');
+            }
+            
+            // Έλεγχος παλμών
+            if (recentRecords.every(r => r.heartRate > LIMITS.heartRate.max)) {
+                addAlert('Προσοχή: Συνεχόμενες μετρήσεις υψηλών παλμών!');
+            } else if (recentRecords.every(r => r.heartRate < LIMITS.heartRate.min)) {
+                addAlert('Προσοχή: Συνεχόμενες μετρήσεις χαμηλών παλμών!');
+            }
+            
+            // Έλεγχος οξυγόνου
+            if (recentRecords.every(r => r.oxygenSaturation < LIMITS.oxygenSaturation.min)) {
+                addAlert('Προσοχή: Συνεχόμενες μετρήσεις χαμηλού οξυγόνου!');
+            }
+        }
+        
+        function addAlert(message) {
+            const alertElement = document.createElement('div');
+            alertElement.className = 'alert-banner';
+            alertElement.innerHTML = `
+                <div>${message}</div>
+                <button class="close-alert" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            alertsContainer.appendChild(alertElement);
+        }
+        
+        // Ορισμός των συναρτήσεων ως καθολικές για πρόσβαση από HTML
+        window.deleteRecord = deleteRecord;
+        
+        // Εκτέλεση της συνάρτησης για έλεγχο τέλους μήνα κάθε μέρα
+        setInterval(checkEndOfMonth, 1000 * 60 * 60 * 8); // Κάθε 8 ώρες
+    </script>
+</body>
+</html>
